@@ -148,9 +148,19 @@
 <!-- CONTROLE -->
 <div class="panel" id="panel-controle">
   <div class="panel-inner">
-    <div class="db-toolbar">
+    <div class="db-toolbar" style="margin-bottom:10px">
       <div class="section-title" style="margin:0">État du stock</div>
       <div class="db-count" id="ctrl-count">—</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <select id="ctrl-sort" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:600;padding:9px 12px;-webkit-appearance:none;font-family:inherit">
+        <option value="alpha">A → Z</option>
+        <option value="qte-asc">Qté croissante</option>
+        <option value="qte-desc">Qté décroissante</option>
+        <option value="date-asc">Pesée la plus ancienne</option>
+        <option value="date-desc">Pesée la plus récente</option>
+      </select>
+      <button type="button" class="btn-danger" id="btn-reset-histo" style="padding:9px 13px;white-space:nowrap">🔄 RAZ</button>
     </div>
     <div class="card" style="padding:0">
       <div id="ctrl-list"><div class="empty"><div class="ei">📋</div>Aucun jeu enregistré.</div></div>
@@ -481,21 +491,49 @@ document.getElementById('btn-reset-ctrl').addEventListener('click', function(){
 function renderControle() {
   var list  = document.getElementById('ctrl-list');
   var count = document.getElementById('ctrl-count');
-  var sorted= jeux.slice().sort(function(a,b){ return a.nom.localeCompare(b.nom,'fr'); });
-  if (sorted.length === 0) {
-    list.innerHTML = '<div class="empty"><div class="ei">📋</div>Aucun jeu dans la base.</div>';
-    count.textContent = '—'; return;
-  }
-  count.textContent = sorted.length + ' jeu' + (sorted.length > 1 ? 'x' : '');
-  list.innerHTML = sorted.map(function(j) {
+  if (!list) return;
+
+  var sortEl = document.getElementById('ctrl-sort');
+  var sortBy = sortEl ? sortEl.value : 'alpha';
+
+  var items = jeux.slice().map(function(j) {
     var h = histo[j.id];
-    var qte = h ? h.qte : 0;
-    var cls = h ? 'has' : '';
+    return { j: j, h: h, qte: h ? Number(h.qte) : 0, ts: h && h.ts ? new Date(h.ts) : null };
+  });
+
+  items.sort(function(a, b) {
+    if (sortBy === 'alpha')     return a.j.nom.localeCompare(b.j.nom, 'fr');
+    if (sortBy === 'qte-asc')   return a.qte - b.qte;
+    if (sortBy === 'qte-desc')  return b.qte - a.qte;
+    if (sortBy === 'date-asc') {
+      if (!a.ts && !b.ts) return a.j.nom.localeCompare(b.j.nom, 'fr');
+      if (!a.ts) return -1;
+      if (!b.ts) return 1;
+      return a.ts - b.ts;
+    }
+    if (sortBy === 'date-desc') {
+      if (!a.ts && !b.ts) return a.j.nom.localeCompare(b.j.nom, 'fr');
+      if (!a.ts) return 1;
+      if (!b.ts) return -1;
+      return b.ts - a.ts;
+    }
+    return 0;
+  });
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="ei">📋</div>Aucun jeu dans la base.</div>';
+    if (count) count.textContent = '—'; return;
+  }
+  if (count) count.textContent = items.length + ' jeu' + (items.length > 1 ? 'x' : '');
+
+  list.innerHTML = items.map(function(item) {
+    var j = item.j;
+    var qte = item.qte;
+    var cls = item.h ? 'has' : '';
     var dateStr = '';
-    if (h && h.ts) {
-      var d = new Date(h.ts);
-      dateStr = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' +
-                d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    if (item.ts) {
+      dateStr = item.ts.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' +
+                item.ts.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     }
     return '<div class="ctrl-row" onclick="goToSaisie(' + j.id + ')">' +
       '<div class="ctrl-info">' +
@@ -575,6 +613,19 @@ function importData(e) {
 }
 
 // ── Lecture balance par photo ──────────────────────────────────────
+// Tri controle
+var ctrlSortEl = document.getElementById('ctrl-sort');
+if (ctrlSortEl) ctrlSortEl.addEventListener('change', renderControle);
+
+// RAZ historique
+document.getElementById('btn-reset-histo').addEventListener('click', function() {
+  if (!confirm('Remettre toutes les quantités à zéro ?')) return;
+  histo = {};
+  saveHisto();
+  renderControle();
+  toast('Historique remis à zéro');
+});
+
 // Boot
 loadData();
 addEtalonRow();
