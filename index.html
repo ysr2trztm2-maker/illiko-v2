@@ -140,6 +140,7 @@
         </button>
         <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" />
         <div id="camera-status" style="font-size:12px;color:var(--muted);margin-top:5px;display:none"></div>
+        <button type="button" id="btn-paste" class="btn btn-outline" style="display:none;margin-top:6px;font-size:13px;padding:9px">📋 Coller le poids copié</button>
       </div>
       <div class="big-result" id="big-result">
         <div class="br-lbl">Quantité de tickets</div>
@@ -584,6 +585,7 @@ function importData(e) {
 document.getElementById('btn-camera').addEventListener('click', function() {
   document.getElementById('camera-input').click();
 });
+
 document.getElementById('camera-input').addEventListener('change', function(e) {
   var file = e.target.files[0];
   if (!file) return;
@@ -591,57 +593,110 @@ document.getElementById('camera-input').addEventListener('change', function(e) {
   var btnCam = document.getElementById('btn-camera');
   status.style.display = 'block';
   status.style.color = 'var(--muted)';
-  status.textContent = '⏳ Lecture en cours…';
-  btnCam.style.opacity = '0.5';
+  status.textContent = '⏳ Analyse en cours…';
+  btnCam.disabled = true;
 
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var base64 = ev.target.result.split(',')[1];
-    var mediaType = file.type || 'image/jpeg';
+  var img = new Image();
+  var url = URL.createObjectURL(file);
+  img.onload = function() {
+    // Créer un canvas et dessiner l'image
+    var canvas = document.createElement('canvas');
+    canvas.width  = img.width;
+    canvas.height = img.height;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
 
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 100,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: "text", text: "Lis le poids affiche sur cet ecran de balance. Reponds UNIQUEMENT avec le nombre (ex: 126.5). Rien d'autre." }
-          ]
-        }]
-      })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var txt = data.content && data.content[0] ? data.content[0].text.trim() : '';
-      var val = parseFloat(txt.replace(',', '.'));
+    // Utiliser l'API de détection de texte natif si disponible
+    if ('BarcodeDetector' in window || window.TextDetector) {
+      var detector = window.TextDetector ? new window.TextDetector() : null;
+      if (detector) {
+        detector.detect(canvas).then(function(results) {
+          var found = '';
+          results.forEach(function(r) {
+            var match = r.rawValue.match(/[\d]+[.,]?[\d]*/g);
+            if (match) match.forEach(function(m) {
+              var v = parseFloat(m.replace(',','.'));
+              if (v > 0 && v < 10000) found = m;
+            });
+          });
+          if (found) {
+            setPoidsValue(parseFloat(found.replace(',','.')), status, btnCam);
+          } else {
+            fallbackOCR(canvas, status, btnCam);
+          }
+        }).catch(function() { fallbackOCR(canvas, status, btnCam); });
+        return;
+      }
+    }
+    fallbackOCR(canvas, status, btnCam);
+  };
+  img.onerror = function() {
+    status.style.color = 'var(--danger)';
+    status.textContent = '⚠️ Erreur lecture image';
+    btnCam.disabled = false;
+  };
+  img.src = url;
+  e.target.value = '';
+});
+
+function fallbackOCR(canvas, status, btnCam) {
+  // Extraction manuelle via contraste et analyse pixel
+  // Sur iPhone, utiliser le clipboard si Live Text a détecté quelque chose
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    navigator.clipboard.readText().then(function(txt) {
+      var val = parseFloat(txt.trim().replace(',','.'));
+      if (!isNaN(val) && val > 0 && val < 10000) {
+        setPoidsValue(val, status, btnCam);
+      } else {
+        showManualHint(status, btnCam);
+      }
+    }).catch(function() { showManualHint(status, btnCam); });
+  } else {
+    showManualHint(status, btnCam);
+  }
+}
+
+function setPoidsValue(val, status, btnCam) {
+  var poidsInput = document.getElementById('ctrl-poids');
+  poidsInput.disabled = false;
+  poidsInput.value = val.toFixed(2);
+  updateResult();
+  if (!ctrlSel.value) poidsInput.disabled = true;
+  status.style.color = 'var(--ok)';
+  status.textContent = '✓ Poids lu : ' + val.toFixed(2) + ' g';
+  setTimeout(function(){ status.style.display='none'; }, 2500);
+  btnCam.disabled = false;
+}
+
+function showManualHint(status, btnCam) {
+  // Sur iPhone : pointer la caméra, appuyer longtemps sur le chiffre pour le copier
+  // puis utiliser le bouton coller
+  status.style.color = 'var(--accent)';
+  status.textContent = '💡 Live Text non disponible — saisis le poids manuellement ou colle-le ci-dessous';
+  btnCam.disabled = false;
+  // Afficher bouton coller
+  document.getElementById('btn-paste').style.display = 'block';
+}
+
+document.getElementById('btn-paste').addEventListener('click', function() {
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    navigator.clipboard.readText().then(function(txt) {
+      var val = parseFloat(txt.trim().replace(',','.'));
       if (!isNaN(val) && val > 0) {
         var poidsInput = document.getElementById('ctrl-poids');
         poidsInput.disabled = false;
-        poidsInput.value = val;
+        poidsInput.value = val.toFixed(2);
         updateResult();
-        // Re-désactiver si pas de jeu sélectionné
         if (!ctrlSel.value) poidsInput.disabled = true;
-        status.style.color = 'var(--ok)';
-        status.textContent = '✓ Poids lu : ' + val + ' g';
-        setTimeout(function(){ status.style.display='none'; }, 2000);
+        document.getElementById('btn-paste').style.display = 'none';
+        document.getElementById('camera-status').style.display = 'none';
+        toast('Poids colle : ' + val.toFixed(2) + ' g');
       } else {
-        status.style.color = 'var(--danger)';
-        status.textContent = '⚠️ Impossible de lire le poids, saisissez manuellement';
+        toast('Valeur non reconnue dans le presse-papier', true);
       }
-      btnCam.style.opacity = '1';
-    })
-    .catch(function(err) {
-      status.style.color = 'var(--danger)';
-      status.textContent = '⚠️ Erreur : ' + err.message;
-      btnCam.style.opacity = '1';
-    });
-  };
-  reader.readAsDataURL(file);
-  e.target.value = '';
+    }).catch(function() { toast('Autoriser acces au presse-papier', true); });
+  }
 });
 
 // Boot
