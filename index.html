@@ -445,6 +445,8 @@ function onSelect() {
     document.getElementById('ji-carnet').textContent = j.carnet.toFixed(2);
     document.getElementById('ji-nb').textContent     = j.nb;
     document.getElementById('ji-unit').textContent   = unitaire(j).toFixed(3);
+    // Ouvrir le clavier automatiquement
+    setTimeout(function(){ ctrlPoids.focus(); }, 100);
   }
   if (!j) { brVal.textContent='—'; brSub.textContent='Sélectionnez un jeu et pesez'; bigResult.classList.remove('active'); btnSaveH.disabled=true; }
 }
