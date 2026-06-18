@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Illiko v6</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0D0F14;--surface:#171A22;--surface2:#1E2230;--border:#272C3A;
+      --accent:#F59E0B;--accent-dim:#7C5208;--text:#E8EAF0;--muted:#5A6072;
+      --ok:#10B981;--danger:#EF4444;--radius:14px;
+      --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+    }
+    html,body{height:100%}
+    body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;min-height:100dvh}
+    #appHeader{background:var(--surface);border-bottom:1px solid var(--border);padding:calc(14px + var(--safe-top)) 18px 14px;flex-shrink:0}
+    .header-title{font-size:18px;font-weight:700;color:var(--accent)}
+    .header-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    #tabBar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+    .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:56px;gap:2px;border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;-webkit-tap-highlight-color:transparent}
+    .tab-btn .icon{font-size:19px}
+    .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+    .panel{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .panel.active{display:block}
+    .panel-inner{padding:16px 14px calc(32px + var(--safe-bot))}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 14px;margin-bottom:14px}
+    .field{margin-bottom:11px}
+    label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+    input,select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-weight:500;padding:11px 13px;-webkit-appearance:none;appearance:none;outline:none;font-family:inherit}
+    input::placeholder{color:var(--muted);font-weight:400}
+    input:focus,select:focus{border-color:var(--accent)}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+    select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235A6072' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+    select option{background:#1E2230}
+    .row-2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .computed{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between}
+    .computed .cv{font-size:20px;font-weight:800;color:var(--accent)}
+    .computed .cl{font-size:12px;color:var(--muted)}
+    .btn{display:block;width:100%;padding:13px;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit}
+    .btn:active{opacity:.75}
+    .btn-primary{background:var(--accent);color:#000;margin-top:12px}
+    .btn-primary:disabled{background:var(--accent-dim);color:#5a4000}
+    .btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--muted);margin-top:7px;font-size:14px;padding:11px}
+    .btn-danger{background:transparent;border:1.5px solid var(--danger);color:var(--danger);font-size:13px;padding:7px 13px;border-radius:9px;font-weight:600;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .big-result{background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;margin-top:12px}
+    .big-result.active{border-color:var(--accent)}
+    .br-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px}
+    .br-val{font-size:60px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-2px}
+    .br-sub{font-size:12px;color:var(--muted);margin-top:5px}
+    .ji-bar{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:12px;display:none}
+    .ji-bar.on{display:block}
+    .ji-name{font-size:15px;font-weight:700;margin-bottom:5px}
+    .ji-chips{display:flex;gap:7px;flex-wrap:wrap}
+    .chip{background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;padding:3px 9px;color:var(--muted)}
+    .chip span{color:var(--text)}
+    .db-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+    .db-count{font-size:13px;color:var(--muted)}
+    .db-list{display:flex;flex-direction:column;gap:7px}
+    .db-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 13px;display:flex;align-items:center;gap:10px}
+    .db-item.editing{border-color:var(--accent);background:rgba(245,158,11,.04)}
+    .dbi-info{flex:1;min-width:0}
+    .dbi-name{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dbi-meta{font-size:12px;color:var(--muted);margin-top:2px}
+    .dbi-actions{display:flex;gap:7px;flex-shrink:0}
+    .btn-icon{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .search-wrap{position:relative;margin-bottom:12px}
+    .search-wrap input{padding-left:36px}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
+    .empty{text-align:center;padding:36px 18px;color:var(--muted);font-size:14px}
+    .empty .ei{font-size:30px;margin-bottom:8px}
+    .sep{height:1px;background:var(--border);margin:14px 0}
+    /* Controle rows */
+    .ctrl-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .ctrl-row:active{background:rgba(245,158,11,.07)}
+    .ctrl-row:last-child{border-bottom:none}
+    .ctrl-info{flex:1;min-width:0}
+    .ctrl-nom{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ctrl-meta{font-size:11px;color:var(--muted);margin-top:1px}
+    .ctrl-right{text-align:right;flex-shrink:0}
+    .ctrl-qte{font-size:22px;font-weight:800;color:var(--muted)}
+    .ctrl-qte.has{color:var(--ok)}
+    .ctrl-date{font-size:11px;color:var(--muted);margin-top:1px}
+    .etalon-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+    .etalon-row input{flex:1}
+    .etalon-del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 6px;border-radius:6px;-webkit-tap-highlight-color:transparent;flex-shrink:0}
+    .etalon-del:active{color:var(--danger)}
+    .etalon-result{background:var(--bg);border:1.5px solid var(--ok);border-radius:10px;padding:10px 13px;margin-top:8px;display:none}
+    .etalon-result.on{display:block}
+    .etalon-moy{font-size:18px;font-weight:800;color:var(--ok)}
+    .etalon-detail{font-size:11px;color:var(--muted);margin-top:2px}
+    #toast{position:fixed;bottom:calc(18px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(14px);background:var(--ok);color:#fff;font-size:14px;font-weight:600;padding:10px 18px;border-radius:28px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:999}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    #toast.err{background:var(--danger)}
+  </style>
+</head>
+<body>
+
+<div id="appHeader">
+  <div class="header-title">Illiko — Inventaire</div>
+  <div class="header-sub">Pesée des jeux à gratter · LE GLOBE</div>
+</div>
+
+<div id="tabBar">
+  <button class="tab-btn active" data-tab="saisie"><span class="icon">⚖️</span>Saisie</button>
+  <button class="tab-btn" data-tab="controle"><span class="icon">📋</span>Contrôle</button>
+  <button class="tab-btn" data-tab="base"><span class="icon">📚</span>Base</button>
+</div>
+
+<!-- SAISIE -->
+<div class="panel active" id="panel-saisie">
+  <div class="panel-inner">
+    <div class="card">
+      <div class="section-title">Choisir le jeu</div>
+      <div class="field">
+        <select id="ctrl-select"><option value="">— Sélectionner un jeu —</option></select>
+      </div>
+      <div class="ji-bar" id="ji-bar">
+        <div class="ji-name" id="ji-name"></div>
+        <div class="ji-chips">
+          <div class="chip">Carnet : <span id="ji-carnet"></span> g</div>
+          <div class="chip"><span id="ji-nb"></span> tickets</div>
+          <div class="chip"><span id="ji-unit"></span> g/ticket</div>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="field">
+        <label>Poids pesé (g)</label>
+        <input type="number" id="ctrl-poids" placeholder="Saisir le poids…" inputmode="decimal" step="0.01" min="0" disabled />
+      </div>
+      <div class="field">
+        <button type="button" class="btn btn-outline" id="btn-camera" style="margin-top:0;display:flex;align-items:center;justify-content:center;gap:8px">
+          📷 Lire la balance par photo
+        </button>
+        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" />
+        <div id="camera-status" style="font-size:12px;color:var(--muted);margin-top:5px;display:none"></div>
+      </div>
+      <div class="big-result" id="big-result">
+        <div class="br-lbl">Quantité de tickets</div>
+        <div class="br-val" id="br-val">—</div>
+        <div class="br-sub" id="br-sub">Sélectionnez un jeu et pesez</div>
+      </div>
+      <button class="btn btn-primary" id="btn-save-histo" disabled>Enregistrer</button>
+      <button class="btn btn-outline" id="btn-reset-ctrl">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROLE -->
+<div class="panel" id="panel-controle">
+  <div class="panel-inner">
+    <div class="db-toolbar">
+      <div class="section-title" style="margin:0">État du stock</div>
+      <div class="db-count" id="ctrl-count">—</div>
+    </div>
+    <div class="card" style="padding:0">
+      <div id="ctrl-list"><div class="empty"><div class="ei">📋</div>Aucun jeu enregistré.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BASE -->
+<div class="panel" id="panel-base">
+  <div class="panel-inner">
+    <div class="card">
+      <div class="section-title" id="form-title">Ajouter un jeu</div>
+      <div class="field">
+        <label>Nom du jeu</label>
+        <input type="text" id="db-nom" placeholder="ex : Cash Extreme" autocomplete="off" autocorrect="off" spellcheck="false" />
+      </div>
+      <div class="field">
+        <label>Tickets / carnet</label>
+        <input type="number" id="db-nb" placeholder="ex : 36" inputmode="numeric" step="1" min="1" />
+      </div>
+      <div class="field">
+        <label>Pesées d'étalonnage (poids carnet neuf en g)</label>
+        <div id="etalon-rows"></div>
+        <button type="button" class="btn-outline" style="margin-top:6px;padding:9px;font-size:13px" onclick="addEtalonRow()">+ Ajouter une pesée</button>
+        <div class="etalon-result" id="etalon-result">
+          <div class="etalon-moy" id="etalon-moy">—</div>
+          <div class="etalon-detail" id="etalon-detail"></div>
+        </div>
+      </div>
+      <div class="field" id="unit-wrap" style="display:none">
+        <label>Poids unitaire moyen calculé</label>
+        <div class="computed"><div class="cv" id="unit-val">—</div><div class="cl">g / ticket</div></div>
+      </div>
+      <button class="btn btn-primary" id="btn-save-jeu" disabled>Enregistrer le jeu</button>
+      <button class="btn btn-outline" id="btn-cancel" style="display:none">Annuler</button>
+    </div>
+
+    <div class="db-toolbar">
+      <div class="section-title" style="margin:0">Jeux enregistrés</div>
+      <div class="db-count" id="db-count">—</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-danger" style="flex:1;border-color:var(--accent);color:var(--accent);font-size:13px;padding:9px" onclick="exportData()">⬇️ Exporter</button>
+      <label style="flex:1;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px solid var(--border);color:var(--muted);font-size:13px;padding:9px;border-radius:9px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">
+        ⬆️ Importer<input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
+      </label>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search" placeholder="Rechercher…" autocomplete="off" />
+    </div>
+    <div class="db-list" id="db-list"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// Storage keys
+var LS_JEUX  = 'illiko_jeux_v1';
+var LS_HISTO = 'illiko_histo_v1';
+
+// State
+var jeux  = [];
+var histo = {};  // { jeuId: {nom, poids, qte, ts} }
+var editId = null;
+
+function loadData() {
+  try { jeux  = JSON.parse(localStorage.getItem(LS_JEUX))  || []; } catch(e) { jeux = []; }
+  try { histo = JSON.parse(localStorage.getItem(LS_HISTO)) || {}; } catch(e) { histo = {}; }
+}
+function saveJeux()  { localStorage.setItem(LS_JEUX,  JSON.stringify(jeux)); }
+function saveHisto() { localStorage.setItem(LS_HISTO, JSON.stringify(histo)); }
+
+function unitaire(j) { return j.nb > 0 ? j.carnet / j.nb : 0; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var t = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('panel-' + t).classList.add('active');
+    if (t === 'controle') renderControle();
+  });
+});
+
+// ── BASE ──────────────────────────────────────────────────────────
+var dbNom    = document.getElementById('db-nom');
+var dbNb     = document.getElementById('db-nb');
+var unitWrap = document.getElementById('unit-wrap');
+var unitVal  = document.getElementById('unit-val');
+var btnSave  = document.getElementById('btn-save-jeu');
+var btnCancel= document.getElementById('btn-cancel');
+var formTitle= document.getElementById('form-title');
+
+function getEtalonValues() {
+  var rows = document.querySelectorAll('.etalon-input');
+  var vals = [];
+  rows.forEach(function(inp) {
+    var v = parseFloat(inp.value);
+    if (!isNaN(v) && v > 0) vals.push(v);
+  });
+  return vals;
+}
+
+function getMoyCarnet() {
+  var vals = getEtalonValues();
+  if (vals.length === 0) return 0;
+  return vals.reduce(function(a,b){ return a+b; }, 0) / vals.length;
+}
+
+function addEtalonRow(val) {
+  var container = document.getElementById('etalon-rows');
+  var div = document.createElement('div');
+  div.className = 'etalon-row';
+  div.innerHTML = '<input type="number" class="etalon-input" placeholder="ex : 126.0" inputmode="decimal" step="0.01" min="0.01" value="' + (val || '') + '" />' +
+    '<button type="button" class="etalon-del" onclick="removeEtalonRow(this)">✕</button>';
+  div.querySelector('.etalon-input').addEventListener('input', validateForm);
+  container.appendChild(div);
+  div.querySelector('.etalon-input').focus();
+  validateForm();
+}
+
+function removeEtalonRow(btn) {
+  btn.closest('.etalon-row').remove();
+  validateForm();
+}
+
+function validateForm() {
+  var n   = dbNom.value.trim();
+  var nb  = parseInt(dbNb.value, 10);
+  var vals= getEtalonValues();
+  var moy = getMoyCarnet();
+  var ok  = n.length > 0 && nb >= 1 && !isNaN(nb) && vals.length > 0;
+  btnSave.disabled = !ok;
+
+  // Afficher résultat étalonnage
+  var res = document.getElementById('etalon-result');
+  var moyEl = document.getElementById('etalon-moy');
+  var detEl = document.getElementById('etalon-detail');
+  if (vals.length > 0 && nb >= 1 && !isNaN(nb)) {
+    var unit = moy / nb;
+    moyEl.textContent = 'Moy. carnet : ' + moy.toFixed(2) + ' g → ' + unit.toFixed(3) + ' g/ticket';
+    var detail = vals.length + ' pesée' + (vals.length > 1 ? 's' : '');
+    if (vals.length > 1) {
+      var min = Math.min.apply(null, vals).toFixed(2);
+      var max = Math.max.apply(null, vals).toFixed(2);
+      detail += ' · min ' + min + ' g · max ' + max + ' g';
+    }
+    detEl.textContent = detail;
+    res.className = 'etalon-result on';
+    unitVal.textContent = unit.toFixed(3) + ' g';
+    unitWrap.style.display = 'block';
+  } else {
+    res.className = 'etalon-result';
+    unitWrap.style.display = 'none';
+  }
+}
+[dbNom, dbNb].forEach(function(el){ el.addEventListener('input', validateForm); });
+
+btnSave.addEventListener('click', function() {
+  var nom = dbNom.value.trim();
+  var nb  = parseInt(dbNb.value, 10);
+  var moy = getMoyCarnet();
+  if (!nom || isNaN(nb) || nb < 1 || moy <= 0) return;
+  if (editId !== null) {
+    var idx = jeux.findIndex(function(j){ return j.id === editId; });
+    if (idx !== -1) jeux[idx] = { id: editId, nom: nom, carnet: moy, nb: nb, createdAt: jeux[idx].createdAt, pesees: getEtalonValues() };
+    toast('Modifie'); cancelEdit();
+  } else {
+    jeux.push({ id: Date.now(), nom: nom, carnet: moy, nb: nb, createdAt: new Date().toISOString(), pesees: getEtalonValues() });
+    toast('Ajoute'); clearForm();
+  }
+  saveJeux(); renderDB(); refreshSelect();
+});
+
+function clearForm() {
+  dbNom.value=''; dbNb.value='';
+  document.getElementById('etalon-rows').innerHTML = '';
+  document.getElementById('etalon-result').className = 'etalon-result';
+  unitWrap.style.display='none';
+  addEtalonRow(); // une ligne vide par défaut
+  validateForm(); dbNom.focus();
+}
+function cancelEdit() {
+  editId=null; formTitle.textContent='Ajouter un jeu';
+  btnSave.textContent='Enregistrer le jeu'; btnCancel.style.display='none';
+  document.querySelectorAll('.db-item.editing').forEach(function(el){ el.classList.remove('editing'); });
+  clearForm();
+}
+btnCancel.addEventListener('click', cancelEdit);
+
+function startEdit(id) {
+  var j = jeux.find(function(x){ return x.id === id; });
+  if (!j) return;
+  editId = id;
+  dbNom.value = j.nom; dbNb.value = j.nb;
+  document.getElementById('etalon-rows').innerHTML = '';
+  var pesees = j.pesees && j.pesees.length ? j.pesees : [j.carnet];
+  pesees.forEach(function(v){ addEtalonRow(v); });
+  formTitle.textContent = 'Modifier'; btnSave.textContent = 'Sauvegarder';
+  btnCancel.style.display = 'block';
+  document.querySelectorAll('.db-item').forEach(function(el){ el.classList.remove('editing'); });
+  var el = document.getElementById('dbi-' + id);
+  if (el) el.classList.add('editing');
+  validateForm();
+  document.getElementById('panel-base').scrollTo({ top: 0, behavior: 'smooth' });
+  dbNom.focus();
+}
+
+function deleteJeu(id) {
+  var j = jeux.find(function(x){ return x.id === id; });
+  if (!j || !confirm('Supprimer ' + j.nom + ' ?')) return;
+  jeux = jeux.filter(function(x){ return x.id !== id; });
+  delete histo[id];
+  if (editId === id) cancelEdit();
+  saveJeux(); saveHisto(); renderDB(); refreshSelect(); renderControle();
+  toast('Supprime');
+}
+
+document.getElementById('search').addEventListener('input', renderDB);
+
+function renderDB() {
+  var list  = document.getElementById('db-list');
+  var q     = document.getElementById('search').value.trim().toLowerCase();
+  var sorted= jeux.slice().sort(function(a,b){ return a.nom.localeCompare(b.nom,'fr'); });
+  var fil   = q ? sorted.filter(function(j){ return j.nom.toLowerCase().includes(q); }) : sorted;
+  var n     = jeux.length;
+  document.getElementById('db-count').textContent = n + (n !== 1 ? ' jeux' : ' jeu');
+  if (n === 0) { list.innerHTML = '<div class="empty"><div class="ei">📋</div>Aucun jeu.<br>Remplissez le formulaire.</div>'; return; }
+  if (fil.length === 0) { list.innerHTML = '<div class="empty"><div class="ei">🔍</div>Aucun résultat.</div>'; return; }
+  list.innerHTML = fil.map(function(j) {
+    var u = unitaire(j).toFixed(3);
+    var dateStr = '';
+    if (j.createdAt) {
+      var d = new Date(j.createdAt);
+      dateStr = ' · ' + d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    }
+    return '<div class="db-item" id="dbi-' + j.id + '">' +
+      '<div class="dbi-info">' +
+        '<div class="dbi-name">' + esc(j.nom) + '</div>' +
+        '<div class="dbi-meta">' + j.nb + ' tickets · ' + u + ' g/ticket' + (j.pesees && j.pesees.length > 1 ? ' · ' + j.pesees.length + ' pesées' : '') + dateStr + '</div>' +
+      '</div>' +
+      '<div class="dbi-actions">' +
+        '<button class="btn-icon" onclick="startEdit(' + j.id + ')">✏️</button>' +
+        '<button class="btn-icon" onclick="deleteJeu(' + j.id + ')">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── SAISIE ────────────────────────────────────────────────────────
+var ctrlSel  = document.getElementById('ctrl-select');
+var ctrlPoids= document.getElementById('ctrl-poids');
+var bigResult= document.getElementById('big-result');
+var brVal    = document.getElementById('br-val');
+var brSub    = document.getElementById('br-sub');
+var btnSaveH = document.getElementById('btn-save-histo');
+
+function refreshSelect() {
+  var prev = ctrlSel.value;
+  ctrlSel.innerHTML = '<option value="">— Sélectionner un jeu —</option>' +
+    jeux.slice().sort(function(a,b){ return a.nom.localeCompare(b.nom,'fr'); })
+    .map(function(j){ return '<option value="' + j.id + '">' + esc(j.nom) + '</option>'; }).join('');
+  if (prev && jeux.find(function(x){ return String(x.id) === prev; })) ctrlSel.value = prev;
+  onSelect();
+}
+
+ctrlSel.addEventListener('change', function(){ ctrlPoids.value = ''; onSelect(); updateResult(); });
+
+function onSelect() {
+  var id = ctrlSel.value;
+  var j  = id ? jeux.find(function(x){ return String(x.id) === id; }) : null;
+  ctrlPoids.disabled = !j;
+  var bar = document.getElementById('ji-bar');
+  bar.className = 'ji-bar' + (j ? ' on' : '');
+  if (j) {
+    document.getElementById('ji-name').textContent   = j.nom;
+    document.getElementById('ji-carnet').textContent = j.carnet.toFixed(2);
+    document.getElementById('ji-nb').textContent     = j.nb;
+    document.getElementById('ji-unit').textContent   = unitaire(j).toFixed(3);
+  }
+  if (!j) { brVal.textContent='—'; brSub.textContent='Sélectionnez un jeu et pesez'; bigResult.classList.remove('active'); btnSaveH.disabled=true; }
+}
+
+ctrlPoids.addEventListener('input', updateResult);
+
+function updateResult() {
+  var id = ctrlSel.value;
+  var j  = id ? jeux.find(function(x){ return String(x.id) === id; }) : null;
+  var p  = parseFloat(ctrlPoids.value);
+  if (!j || isNaN(p) || p < 0) {
+    brVal.textContent='—'; brSub.textContent=j?'Saisissez le poids':'Sélectionnez un jeu';
+    bigResult.classList.remove('active'); btnSaveH.disabled=true; return;
+  }
+  var qte = Math.round(p / unitaire(j));
+  brVal.textContent = qte;
+  brSub.textContent = p.toFixed(2) + ' g / ' + unitaire(j).toFixed(3) + ' g/ticket';
+  bigResult.classList.add('active'); btnSaveH.disabled = false;
+}
+
+btnSaveH.addEventListener('click', function() {
+  var id = ctrlSel.value;
+  var j  = jeux.find(function(x){ return String(x.id) === id; });
+  var p  = parseFloat(ctrlPoids.value);
+  if (!j || isNaN(p)) return;
+  var qte = Math.round(p / unitaire(j));
+  histo[id] = { nom: j.nom, poids: p, qte: qte, ts: new Date().toISOString() };
+  saveHisto(); renderControle();
+  toast(qte + ' tickets enregistres');
+  ctrlPoids.value = ''; updateResult();
+  // Rediriger vers Controle
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelector('[data-tab="controle"]').classList.add('active');
+  document.getElementById('panel-controle').classList.add('active');
+});
+
+document.getElementById('btn-reset-ctrl').addEventListener('click', function(){
+  ctrlSel.value=''; ctrlPoids.value=''; onSelect(); updateResult();
+});
+
+// ── CONTROLE ──────────────────────────────────────────────────────
+function renderControle() {
+  var list  = document.getElementById('ctrl-list');
+  var count = document.getElementById('ctrl-count');
+  var sorted= jeux.slice().sort(function(a,b){ return a.nom.localeCompare(b.nom,'fr'); });
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="ei">📋</div>Aucun jeu dans la base.</div>';
+    count.textContent = '—'; return;
+  }
+  count.textContent = sorted.length + ' jeu' + (sorted.length > 1 ? 'x' : '');
+  list.innerHTML = sorted.map(function(j) {
+    var h = histo[j.id];
+    var qte = h ? h.qte : 0;
+    var cls = h ? 'has' : '';
+    var dateStr = '';
+    if (h && h.ts) {
+      var d = new Date(h.ts);
+      dateStr = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' +
+                d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    }
+    return '<div class="ctrl-row" onclick="goToSaisie(' + j.id + ')">' +
+      '<div class="ctrl-info">' +
+        '<div class="ctrl-nom">' + esc(j.nom) + '</div>' +
+        '<div class="ctrl-meta">' + unitaire(j).toFixed(3) + ' g/ticket</div>' +
+      '</div>' +
+      '<div class="ctrl-right">' +
+        '<div class="ctrl-qte ' + cls + '">' + qte + ' 🎟</div>' +
+        '<div class="ctrl-date">' + (dateStr || 'Jamais pesé') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────
+var _tt;
+var toastEl = document.getElementById('toast');
+function toast(msg, err) {
+  toastEl.textContent = msg;
+  toastEl.className = 'show' + (err ? ' err' : '');
+  clearTimeout(_tt); _tt = setTimeout(function(){ toastEl.className=''; }, 2200);
+}
+
+// zoom non bloque
+
+// Aller vers saisie avec un jeu présélectionné
+function goToSaisie(id) {
+  // Switcher sur l'onglet Saisie
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelector('[data-tab="saisie"]').classList.add('active');
+  document.getElementById('panel-saisie').classList.add('active');
+  // Sélectionner le jeu
+  ctrlSel.value = String(id);
+  ctrlPoids.value = '';
+  onSelect();
+  updateResult();
+  // Focus sur le champ poids
+  setTimeout(function(){ ctrlPoids.focus(); }, 100);
+}
+
+// Export / Import
+function exportData() {
+  var data = { jeux: jeux, histo: histo, exportedAt: new Date().toISOString() };
+  var json = JSON.stringify(data, null, 2);
+  var blob = new Blob([json], { type: 'application/json' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}).replace(/\//g,'-');
+  a.href     = url;
+  a.download = 'illiko-sauvegarde-' + date + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Sauvegarde exportee');
+}
+
+function importData(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var data = JSON.parse(ev.target.result);
+      if (!data.jeux || !Array.isArray(data.jeux)) { toast('Fichier invalide', true); return; }
+      if (!confirm('Remplacer toutes les donnees par celles de la sauvegarde ?')) return;
+      jeux  = data.jeux;
+      histo = data.histo || {};
+      saveJeux(); saveHisto();
+      renderDB(); refreshSelect(); renderControle();
+      toast(jeux.length + ' jeux importes');
+    } catch(err) {
+      toast('Erreur lecture fichier', true);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── Lecture balance par photo ──────────────────────────────────────
+document.getElementById('btn-camera').addEventListener('click', function() {
+  document.getElementById('camera-input').click();
+});
+document.getElementById('camera-input').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var status = document.getElementById('camera-status');
+  var btnCam = document.getElementById('btn-camera');
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = '⏳ Lecture en cours…';
+  btnCam.style.opacity = '0.5';
+
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var base64 = ev.target.result.split(',')[1];
+    var mediaType = file.type || 'image/jpeg';
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 100,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: 'Lis le poids affiché sur cet écran de balance. Réponds UNIQUEMENT avec le nombre (ex: 126.5). Rien d'autre.' }
+          ]
+        }]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var txt = data.content && data.content[0] ? data.content[0].text.trim() : '';
+      var val = parseFloat(txt.replace(',', '.'));
+      if (!isNaN(val) && val > 0) {
+        var poidsInput = document.getElementById('ctrl-poids');
+        poidsInput.disabled = false;
+        poidsInput.value = val;
+        updateResult();
+        // Re-désactiver si pas de jeu sélectionné
+        if (!ctrlSel.value) poidsInput.disabled = true;
+        status.style.color = 'var(--ok)';
+        status.textContent = '✓ Poids lu : ' + val + ' g';
+        setTimeout(function(){ status.style.display='none'; }, 2000);
+      } else {
+        status.style.color = 'var(--danger)';
+        status.textContent = '⚠️ Impossible de lire le poids, saisissez manuellement';
+      }
+      btnCam.style.opacity = '1';
+    })
+    .catch(function(err) {
+      status.style.color = 'var(--danger)';
+      status.textContent = '⚠️ Erreur : ' + err.message;
+      btnCam.style.opacity = '1';
+    });
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+// Boot
+loadData();
+addEtalonRow();
+renderDB();
+renderControle();
+refreshSelect();
+validateForm();
+</script>
+</body>
+</html>
