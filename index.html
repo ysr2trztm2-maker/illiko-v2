@@ -131,9 +131,8 @@
       </div>
       <div class="sep"></div>
       <div class="field">
-        <label>Poids pesé (g) — utilise le 📷 du clavier iOS pour scanner</label>
-        <input type="text" id="ctrl-poids" placeholder="Saisir ou scanner…" inputmode="decimal" disabled autocomplete="off" />
-        <div style="font-size:11px;color:var(--muted);margin-top:5px">💡 Tape le poids ou appuie sur l'icône 📷 dans le clavier pour scanner la balance</div>
+        <label>Poids pesé (g)</label>
+        <input type="number" id="ctrl-poids" placeholder="Saisir le poids…" inputmode="decimal" step="0.01" min="0" disabled />
       </div>
       <div class="big-result" id="big-result">
         <div class="br-lbl">Quantité de tickets</div>
@@ -446,7 +445,7 @@ ctrlPoids.addEventListener('paste', function(){ setTimeout(updateResult, 50); })
 function updateResult() {
   var id = ctrlSel.value;
   var j  = id ? jeux.find(function(x){ return String(x.id) === id; }) : null;
-  var p  = parseFloat(ctrlPoids.value.replace(',','.'));
+  var p  = parseFloat(ctrlPoids.value);
   if (!j || isNaN(p) || p < 0) {
     brVal.textContent='—'; brSub.textContent=j?'Saisissez le poids':'Sélectionnez un jeu';
     bigResult.classList.remove('active'); btnSaveH.disabled=true; return;
@@ -460,7 +459,7 @@ function updateResult() {
 btnSaveH.addEventListener('click', function() {
   var id = ctrlSel.value;
   var j  = jeux.find(function(x){ return String(x.id) === id; });
-  var p  = parseFloat(ctrlPoids.value.replace(',','.'));
+  var p  = parseFloat(ctrlPoids.value);
   if (!j || isNaN(p)) return;
   var qte = Math.round(p / unitaire(j));
   histo[id] = { nom: j.nom, poids: p, qte: qte, ts: new Date().toISOString() };
