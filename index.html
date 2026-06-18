@@ -161,6 +161,7 @@
         <option value="date-desc">Pesée la plus récente</option>
       </select>
       <button type="button" class="btn-danger" id="btn-reset-histo" style="padding:9px 13px;white-space:nowrap">🔄 RAZ</button>
+      <button type="button" class="btn-danger" id="btn-export-pdf" style="padding:9px 13px;white-space:nowrap;border-color:var(--accent);color:var(--accent)">📄 PDF</button>
     </div>
     <div class="card" style="padding:0">
       <div id="ctrl-list"><div class="empty"><div class="ei">📋</div>Aucun jeu enregistré.</div></div>
@@ -626,6 +627,99 @@ document.getElementById('btn-reset-histo').addEventListener('click', function() 
   saveHisto();
   renderControle();
   toast('Historique remis à zéro');
+});
+
+// Export PDF
+document.getElementById('btn-export-pdf').addEventListener('click', function() {
+  var sortEl = document.getElementById('ctrl-sort');
+  var sortBy = sortEl ? sortEl.value : 'alpha';
+  var items = jeux.slice().map(function(j) {
+    var h = histo[j.id];
+    return { j: j, h: h, qte: h ? Number(h.qte) : 0, ts: h && h.ts ? new Date(h.ts) : null };
+  });
+  items.sort(function(a, b) {
+    if (sortBy === 'alpha')    return a.j.nom.localeCompare(b.j.nom, 'fr');
+    if (sortBy === 'qte-asc')  return a.qte - b.qte;
+    if (sortBy === 'qte-desc') return b.qte - a.qte;
+    if (sortBy === 'date-asc') { if (!a.ts) return -1; if (!b.ts) return 1; return a.ts - b.ts; }
+    if (sortBy === 'date-desc'){ if (!a.ts) return 1;  if (!b.ts) return -1; return b.ts - a.ts; }
+    return 0;
+  });
+
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  var heureStr = now.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+
+  var rows = items.map(function(item) {
+    var dateP = '';
+    if (item.ts) {
+      dateP = item.ts.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' +
+              item.ts.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    } else {
+      dateP = 'Jamais pesé';
+    }
+    var bgRow = item.qte === 0 ? '#fff3f3' : '#fff';
+    return '<tr style="background:' + bgRow + '">' +
+      '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:600">' + esc(item.j.nom) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">' + item.j.nb + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">' + unitaire(item.j).toFixed(3) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:700;font-size:16px;color:' + (item.qte > 0 ? '#059669' : '#9ca3af') + '">' + item.qte + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:12px">' + dateP + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var total = items.reduce(function(s, i){ return s + i.qte; }, 0);
+
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">' +
+    '<title>Inventaire Illiko — ' + dateStr + '</title>' +
+    '<style>' +
+      'body{font-family:-apple-system,Arial,sans-serif;margin:0;padding:24px;color:#111}' +
+      'h1{font-size:20px;font-weight:700;margin:0}' +
+      '.subtitle{color:#6b7280;font-size:13px;margin-top:4px}' +
+      '.header{border-bottom:2px solid #f59e0b;padding-bottom:14px;margin-bottom:18px}' +
+      'table{width:100%;border-collapse:collapse;font-size:14px}' +
+      'th{background:#f59e0b;color:#000;padding:9px 12px;text-align:left;font-weight:700}' +
+      'th:not(:first-child){text-align:center}' +
+      '.footer{margin-top:18px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:13px;color:#6b7280}' +
+      '.total{font-weight:700;color:#111;font-size:15px}' +
+      '@media print{body{padding:12px}}' +
+    '</style></head><body>' +
+    '<div class="header">' +
+      '<h1>🎰 Inventaire Illiko — LE GLOBE</h1>' +
+      '<div class="subtitle">' + dateStr + ' à ' + heureStr + ' · ' + items.length + ' jeux</div>' +
+    '</div>' +
+    '<table>' +
+      '<thead><tr>' +
+        '<th>Jeu</th>' +
+        '<th>Tickets/carnet</th>' +
+        '<th>g/ticket</th>' +
+        '<th>Quantité</th>' +
+        '<th>Dernière pesée</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>' +
+    '<div class="footer">' +
+      '<span>Généré par Illiko Inventaire</span>' +
+      '<span class="total">Total : ' + total + ' tickets</span>' +
+    '</div>' +
+    '</body></html>';
+
+  // Ouvrir dans un nouvel onglet et déclencher l'impression
+  var win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+    win.addEventListener('load', function(){ win.print(); });
+  } else {
+    // Fallback : télécharger en HTML (Safari bloque parfois les popups)
+    var blob = new Blob([html], { type: 'text/html' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    var d    = now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}).replace(/\//g,'-');
+    a.href = url; a.download = 'illiko-inventaire-' + d + '.html';
+    a.click(); URL.revokeObjectURL(url);
+    toast('Fichier téléchargé — ouvre-le et imprime');
+  }
 });
 
 // Boot
